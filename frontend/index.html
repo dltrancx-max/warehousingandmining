@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse & Mining Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .slide-up {
+            animation: slideUp 0.5s ease-out;
+        }
+        @keyframes slideUp {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .table-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation Bar -->
+    <nav class="bg-blue-600 text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-warehouse text-2xl"></i>
+                    <h1 class="text-2xl font-bold">Warehouse & Mining Management</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="bg-green-500 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                        <i class="fas fa-check-circle mr-1"></i>Phase 1 & 2 Complete
+                    </span>
+                    <span id="connection-status" class="px-3 py-1 rounded-full text-sm font-semibold bg-red-500">
+                        <i class="fas fa-circle text-xs mr-1"></i>Disconnected
+                    </span>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Alert Messages -->
+        <div id="alert-container" class="mb-6"></div>
+
+        <!-- Hero Section with Initialize Button -->
+        <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-8 mb-8 slide-up">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h2 class="text-3xl font-bold mb-2">Database Management</h2>
+                    <p class="text-blue-100">Initialize the database and create tables with sample data</p>
+                </div>
+                <button id="init-btn" onclick="initializeDatabase()" class="bg-white text-blue-600 hover:bg-blue-50 font-bold py-3 px-8 rounded-lg transition duration-300 flex items-center space-x-2 shadow-md">
+                    <i class="fas fa-database"></i>
+                    <span>Initialize Database</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Statistics Cards -->
+        <div id="stats-container" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6 fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-semibold">Total Customers</p>
+                        <p class="text-3xl font-bold text-blue-600" id="stat-customers">0</p>
+                    </div>
+                    <i class="fas fa-users text-4xl text-blue-200"></i>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-semibold">Total Products</p>
+                        <p class="text-3xl font-bold text-green-600" id="stat-products">0</p>
+                    </div>
+                    <i class="fas fa-boxes text-4xl text-green-200"></i>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-semibold">Total Sales</p>
+                        <p class="text-3xl font-bold text-purple-600" id="stat-sales">0</p>
+                    </div>
+                    <i class="fas fa-receipt text-4xl text-purple-200"></i>
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow p-6 fade-in">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-500 text-sm font-semibold">Total Revenue</p>
+                        <p class="text-3xl font-bold text-red-600" id="stat-revenue">$0</p>
+                    </div>
+                    <i class="fas fa-dollar-sign text-4xl text-red-200"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Tables Section -->
+        <div class="mb-6">
+            <div class="flex items-center space-x-3 mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Phase 1: Core Data Management</h2>
+                <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-semibold">
+                    <i class="fas fa-database mr-1"></i>Phase 1
+                </span>
+            </div>
+            <p class="text-gray-600 mb-6">Basic CRUD operations for customers, locations, products, and sales data</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Customers Table -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden fade-in">
+                <div class="bg-blue-600 text-white px-6 py-4 flex items-center space-x-2">
+                    <i class="fas fa-users"></i>
+                    <h3 class="text-xl font-bold">Customers</h3>
+                </div>
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead class="bg-gray-100 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Email</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">City</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-tbody" class="divide-y divide-gray-200">
+                            <tr class="text-center text-gray-500">
+                                <td colspan="4" class="px-6 py-8"><i class="fas fa-inbox"></i> No data</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Locations Table -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden fade-in">
+                <div class="bg-green-600 text-white px-6 py-4 flex items-center space-x-2">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3 class="text-xl font-bold">Locations</h3>
+                </div>
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead class="bg-gray-100 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">City</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Type</th>
+                            </tr>
+                        </thead>
+                        <tbody id="locations-tbody" class="divide-y divide-gray-200">
+                            <tr class="text-center text-gray-500">
+                                <td colspan="4" class="px-6 py-8"><i class="fas fa-inbox"></i> No data</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Products Table -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden fade-in">
+                <div class="bg-purple-600 text-white px-6 py-4 flex items-center space-x-2">
+                    <i class="fas fa-boxes"></i>
+                    <h3 class="text-xl font-bold">Products</h3>
+                </div>
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead class="bg-gray-100 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Name</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Price</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-tbody" class="divide-y divide-gray-200">
+                            <tr class="text-center text-gray-500">
+                                <td colspan="4" class="px-6 py-8"><i class="fas fa-inbox"></i> No data</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sales Table -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden fade-in">
+                <div class="bg-red-600 text-white px-6 py-4 flex items-center space-x-2">
+                    <i class="fas fa-receipt"></i>
+                    <h3 class="text-xl font-bold">Sales</h3>
+                </div>
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead class="bg-gray-100 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Customer</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Product</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-tbody" class="divide-y divide-gray-200">
+                            <tr class="text-center text-gray-500">
+                                <td colspan="4" class="px-6 py-8"><i class="fas fa-inbox"></i> No data</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics Section -->
+        <div class="mb-6">
+            <div class="flex items-center space-x-3 mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Phase 2: Advanced Analytics</h2>
+                <span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-semibold">
+                    <i class="fas fa-chart-line mr-1"></i>Phase 2
+                </span>
+            </div>
+            <p class="text-gray-600 mb-6">Performance analytics with execution timing for sales insights and reporting</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+            <!-- Sales per Product by Location -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden fade-in">
+                <div class="bg-indigo-600 text-white px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-chart-bar"></i>
+                        <h3 class="text-xl font-bold">Sales per Product by Location</h3>
+                    </div>
+                    <button id="load-sales-analytics-btn" onclick="loadSalesAnalytics()" class="bg-indigo-700 hover:bg-indigo-800 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Load</span>
+                    </button>
+                </div>
+                <div class="p-4 bg-gray-50 border-b">
+                    <div class="flex items-center justify-between text-sm text-gray-600">
+                        <span id="sales-analytics-timing">Execution time: -- ms</span>
+                        <span id="sales-analytics-count">Records: 0</span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead class="bg-gray-100 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Product</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Location</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Sales Count</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Total Qty</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sales-analytics-tbody" class="divide-y divide-gray-200">
+                            <tr class="text-center text-gray-500">
+                                <td colspan="5" class="px-6 py-8"><i class="fas fa-chart-bar"></i> Click Load to view analytics</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Max Sales per Product by Location -->
+            <div class="bg-white rounded-lg shadow-lg overflow-hidden fade-in">
+                <div class="bg-teal-600 text-white px-6 py-4 flex items-center justify-between">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-trophy"></i>
+                        <h3 class="text-xl font-bold">Max Sales per Product by Location</h3>
+                    </div>
+                    <button id="load-max-sales-btn" onclick="loadMaxSalesAnalytics()" class="bg-teal-700 hover:bg-teal-800 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Load</span>
+                    </button>
+                </div>
+                <div class="p-4 bg-gray-50 border-b">
+                    <div class="flex items-center justify-between text-sm text-gray-600">
+                        <span id="max-sales-timing">Execution time: -- ms</span>
+                        <span id="max-sales-count">Records: 0</span>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead class="bg-gray-100 sticky top-0">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Product</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Location</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Max Qty</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Avg Qty</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-700 uppercase">Sales Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="max-sales-tbody" class="divide-y divide-gray-200">
+                            <tr class="text-center text-gray-500">
+                                <td colspan="5" class="px-6 py-8"><i class="fas fa-trophy"></i> Click Load to view analytics</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Phase 3 Dimensional Modeling -->
+        <div class="mb-6">
+            <div class="flex items-center space-x-3 mb-4">
+                <h2 class="text-2xl font-bold text-gray-800">Phase 3: Dimensional Modeling</h2>
+                <span class="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-semibold">
+                    <i class="fas fa-sitemap mr-1"></i>Phase 3
+                </span>
+            </div>
+            <p class="text-gray-600 mb-6">Create dimension tables and hierarchies, then compare query performance to the current model.</p>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden fade-in mb-8">
+            <div class="bg-yellow-600 text-white px-6 py-4 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-project-diagram"></i>
+                    <h3 class="text-xl font-bold">Dimensional Modeling & Performance</h3>
+                </div>
+                <div class="flex gap-3">
+                    <button id="create-phase3-btn" onclick="createPhase3Dimensions()" class="bg-yellow-700 hover:bg-yellow-800 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2">
+                        <i class="fas fa-database"></i>
+                        <span>Create Dimensions</span>
+                    </button>
+                    <button id="create-phase4-btn" onclick="createPhase4DataMart()" class="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2">
+                        <i class="fas fa-store"></i>
+                        <span>Create Data Mart</span>
+                    </button>
+                    <button id="compare-phase3-btn" onclick="comparePhase3Performance()" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2">
+                        <i class="fas fa-chart-line"></i>
+                        <span>Compare Performance</span>
+                    </button>
+                </div>
+            </div>
+            <div class="p-4 bg-gray-50 border-b">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
+                    <span id="phase3-status">Dimensions not created</span>
+                    <span id="phase3-comparison-summary">Comparison not run</span>
+                </div>
+            </div>
+            <div class="p-4">
+                <div id="phase3-comparison-results" class="grid grid-cols-1 lg:grid-cols-2 gap-6 hidden">
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <h4 class="font-semibold text-gray-700 mb-3">Sales Analytics</h4>
+                        <p class="text-sm text-gray-600 mb-2">Baseline: <span id="phase3-sales-baseline-time">--</span> ms</p>
+                        <p class="text-sm text-gray-600 mb-2">Dimension model: <span id="phase3-sales-dim-time">--</span> ms</p>
+                        <p class="text-sm text-gray-600 mb-2">Data Mart: <span id="phase3-sales-mart-time">--</span> ms</p>
+                        <p class="text-sm text-gray-600">Improvement: <span id="phase3-sales-improvement">--</span></p>
+                    </div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                        <h4 class="font-semibold text-gray-700 mb-3">Max Sales Analytics</h4>
+                        <p class="text-sm text-gray-600 mb-2">Baseline: <span id="phase3-max-baseline-time">--</span> ms</p>
+                        <p class="text-sm text-gray-600 mb-2">Dimension model: <span id="phase3-max-dim-time">--</span> ms</p>
+                        <p class="text-sm text-gray-600 mb-2">Data Mart: <span id="phase3-max-mart-time">--</span> ms</p>
+                        <p class="text-sm text-gray-600">Improvement: <span id="phase3-max-improvement">--</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Show alert message
+        function showAlert(message, type = 'info') {
+            const alertContainer = document.getElementById('alert-container');
+            const alertId = `alert-${Date.now()}`;
+            
+            const alertColors = {
+                'success': 'bg-green-100 text-green-800 border-green-300',
+                'error': 'bg-red-100 text-red-800 border-red-300',
+                'warning': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+                'info': 'bg-blue-100 text-blue-800 border-blue-300'
+            };
+
+            const alertHTML = `
+                <div id="${alertId}" class="border-l-4 ${alertColors[type]} p-4 rounded fade-in">
+                    <div class="flex justify-between items-center">
+                        <span>${message}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" class="text-xl font-bold">&times;</button>
+                    </div>
+                </div>
+            `;
+            
+            alertContainer.insertAdjacentHTML('beforeend', alertHTML);
+            
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) alert.remove();
+            }, 5000);
+        }
+
+        // Initialize database
+        async function initializeDatabase() {
+            const btn = document.getElementById('init-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Initializing...</span>';
+
+            try {
+                // First check if tables already exist
+                const checkResponse = await fetch(`${API_BASE_URL}/check-tables`, {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const checkData = await checkResponse.json();
+
+                // If tables exist, ask for confirmation
+                if (checkData.tables_exist) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-database"></i><span>Initialize Database</span>';
+                    
+                    const existingTables = Object.keys(checkData.tables_status)
+                        .filter(t => checkData.tables_status[t])
+                        .join(', ');
+                    
+                    if (confirm(`⚠️ Database tables already exist: ${existingTables}\n\nDo you want to drop the existing tables and recreate them with fresh sample data?`)) {
+                        // User confirmed - drop tables and reinitialize
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Dropping & Recreating...</span>';
+                        
+                        const dropResponse = await fetch(`${API_BASE_URL}/drop-tables`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ confirmed: true })
+                        });
+
+                        const dropData = await dropResponse.json();
+
+                        if (!dropData.success) {
+                            showAlert(`✗ Error dropping tables: ${dropData.message}`, 'error');
+                            btn.disabled = false;
+                            btn.innerHTML = '<i class="fas fa-database"></i><span>Initialize Database</span>';
+                            return;
+                        }
+
+                        // Now initialize database
+                        const initResponse = await fetch(`${API_BASE_URL}/init-database`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        const initData = await initResponse.json();
+
+                        if (initData.success) {
+                            showAlert('✓ Database recreated successfully!', 'success');
+                            updateConnectionStatus(true);
+                            setTimeout(loadAllData, 1000);
+                        } else {
+                            showAlert(`✗ ${initData.message}`, 'error');
+                            updateConnectionStatus(false);
+                        }
+                    } else {
+                        // User cancelled - just show existing data
+                        showAlert('ℹ️ Keeping existing tables. Loading current data...', 'info');
+                        setTimeout(loadAllData, 500);
+                    }
+
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-database"></i><span>Initialize Database</span>';
+                } else {
+                    // Tables don't exist - go ahead and create them
+                    const response = await fetch(`${API_BASE_URL}/init-database`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showAlert('✓ Database initialized successfully!', 'success');
+                        updateConnectionStatus(true);
+                        setTimeout(loadAllData, 1000);
+                    } else {
+                        showAlert(`✗ ${data.message}`, 'error');
+                        updateConnectionStatus(false);
+                    }
+
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-database"></i><span>Initialize Database</span>';
+                }
+            } catch (error) {
+                showAlert(`✗ Connection error: ${error.message}`, 'error');
+                updateConnectionStatus(false);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-database"></i><span>Initialize Database</span>';
+            }
+        }
+
+        // Update connection status
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connection-status');
+            if (connected) {
+                status.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-green-500';
+                status.innerHTML = '<i class="fas fa-circle text-xs mr-1"></i>Connected';
+            } else {
+                status.className = 'px-3 py-1 rounded-full text-sm font-semibold bg-red-500';
+                status.innerHTML = '<i class="fas fa-circle text-xs mr-1"></i>Disconnected';
+            }
+        }
+
+        // Load all data
+        async function loadAllData() {
+            try {
+                await Promise.all([
+                    loadCustomers(),
+                    loadProducts(),
+                    loadLocations(),
+                    loadSales(),
+                    loadStats(),
+                    loadPhase3Status()
+                ]);
+                // If we get here, at least some API calls succeeded
+                updateConnectionStatus(true);
+            } catch (error) {
+                console.error('Error loading data:', error);
+                updateConnectionStatus(false);
+                throw error;
+            }
+        }
+
+        // Load customers
+        async function loadCustomers() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/customers`);
+                const data = await response.json();
+
+                const tbody = document.getElementById('customers-tbody');
+                tbody.innerHTML = '';
+
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(customer => {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">${customer.CUSTOMER_ID}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${customer.CUSTOMER_NAME}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${customer.EMAIL || 'N/A'}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${customer.CITY || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr class="text-center text-gray-500"><td colspan="4" class="px-6 py-8"><i class="fas fa-inbox"></i> No data</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading customers:', error);
+            }
+        }
+
+        // Load products
+        async function loadProducts() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/products`);
+                const data = await response.json();
+
+                const tbody = document.getElementById('products-tbody');
+                tbody.innerHTML = '';
+
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(product => {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">${product.PRODUCT_ID}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${product.PRODUCT_NAME}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">$${parseFloat(product.PRICE).toFixed(2)}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${product.STOCK_QUANTITY}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr class="text-center text-gray-500"><td colspan="4" class="px-6 py-8"><i class="fas fa-inbox"></i> No data</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading products:', error);
+            }
+        }
+
+        // Load locations
+        async function loadLocations() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/locations`);
+                const data = await response.json();
+
+                const tbody = document.getElementById('locations-tbody');
+                tbody.innerHTML = '';
+
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(location => {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">${location.LOCATION_ID}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${location.LOCATION_NAME}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${location.CITY || 'N/A'}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${location.WAREHOUSE_TYPE || 'N/A'}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr class="text-center text-gray-500"><td colspan="4" class="px-6 py-8"><i class="fas fa-inbox"></i> No data</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading locations:', error);
+            }
+        }
+
+        // Load sales
+        async function loadSales() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/sales`);
+                const data = await response.json();
+
+                const tbody = document.getElementById('sales-tbody');
+                tbody.innerHTML = '';
+
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(sale => {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">${sale.SALES_ID}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${sale.CUSTOMER_NAME || 'N/A'}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${sale.PRODUCT_NAME || 'N/A'}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">$${parseFloat(sale.TOTAL_AMOUNT).toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tbody.innerHTML = '<tr class="text-center text-gray-500"><td colspan="4" class="px-6 py-8"><i class="fas fa-inbox"></i> No data</td></tr>';
+                }
+            } catch (error) {
+                console.error('Error loading sales:', error);
+            }
+        }
+
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/stats`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('stat-customers').textContent = data.data.total_customers;
+                    document.getElementById('stat-products').textContent = data.data.total_products;
+                    document.getElementById('stat-sales').textContent = data.data.total_sales;
+                    document.getElementById('stat-revenue').textContent = `$${parseFloat(data.data.total_revenue).toFixed(2)}`;
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadPhase3Status() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/phase3/status`);
+                const data = await response.json();
+                if (data.success) {
+                    const ready = data.ready ? '✅ Dimensions created' : '⚠️ Dimensions not created';
+                    document.getElementById('phase3-status').textContent = ready;
+                    return data.ready;
+                }
+            } catch (error) {
+                console.error('Error loading phase 3 status:', error);
+                document.getElementById('phase3-status').textContent = '⚠️ Phase 3 status unavailable';
+            }
+            return false;
+        }
+
+        async function createPhase3Dimensions() {
+            const btn = document.getElementById('create-phase3-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Creating...</span>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/phase3/create-dimensions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('✓ Phase 3 dimensions created successfully', 'success');
+                    if (data.warning) {
+                        showAlert(`⚠️ ${data.warning}`, 'warning');
+                    }
+                    document.getElementById('phase3-status').textContent = '✅ Dimensions created';
+                } else {
+                    showAlert(`✗ ${data.message}`, 'error');
+                    document.getElementById('phase3-status').textContent = '⚠️ Phase 3 creation failed';
+                }
+            } catch (error) {
+                console.error('Error creating phase 3 dimensions:', error);
+                showAlert('✗ Error creating Phase 3 dimensions', 'error');
+                document.getElementById('phase3-status').textContent = '⚠️ Phase 3 creation failed';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function createPhase4DataMart() {
+            const btn = document.getElementById('create-phase4-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Creating...</span>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/phase4/create-data-mart`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showAlert('✓ Sales Data Mart created and populated successfully', 'success');
+                    document.getElementById('phase3-status').textContent = '✅ Data Mart created';
+                } else {
+                    showAlert(`✗ ${data.message}`, 'error');
+                    document.getElementById('phase3-status').textContent = '⚠️ Data Mart creation failed';
+                }
+            } catch (error) {
+                console.error('Error creating data mart:', error);
+                showAlert('✗ Error creating Sales Data Mart', 'error');
+                document.getElementById('phase3-status').textContent = '⚠️ Data Mart creation failed';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function comparePhase3Performance() {
+            const btn = document.getElementById('compare-phase3-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Comparing...</span>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/phase3/compare`);
+                const data = await response.json();
+
+                if (data.success) {
+                    const sales = data.data.sales_analytics;
+                    const maxSales = data.data.max_sales_analytics;
+                    document.getElementById('phase3-sales-baseline-time').textContent = `${(sales.baseline_time * 1000).toFixed(2)}`;
+                    document.getElementById('phase3-sales-dim-time').textContent = `${(sales.phase3_time * 1000).toFixed(2)}`;
+                    document.getElementById('phase3-sales-mart-time').textContent = `${(sales.phase4_time * 1000).toFixed(2)}`;
+                    document.getElementById('phase3-sales-improvement').textContent = sales.baseline_time > 0 ? `${(((sales.baseline_time - sales.phase4_time) / sales.baseline_time) * 100).toFixed(1)}%` : 'N/A';
+                    document.getElementById('phase3-max-baseline-time').textContent = `${(maxSales.baseline_time * 1000).toFixed(2)}`;
+                    document.getElementById('phase3-max-dim-time').textContent = `${(maxSales.phase3_time * 1000).toFixed(2)}`;
+                    document.getElementById('phase3-max-mart-time').textContent = `${(maxSales.phase4_time * 1000).toFixed(2)}`;
+                    document.getElementById('phase3-max-improvement').textContent = maxSales.baseline_time > 0 ? `${(((maxSales.baseline_time - maxSales.phase4_time) / maxSales.baseline_time) * 100).toFixed(1)}%` : 'N/A';
+                    document.getElementById('phase3-comparison-summary').textContent = 'Phase 3 & 4 performance comparison loaded';
+                    document.getElementById('phase3-comparison-results').classList.remove('hidden');
+                    showAlert('✓ Phase 3 & 4 performance comparison completed', 'success');
+                } else {
+                    showAlert(`✗ ${data.message}`, 'error');
+                    document.getElementById('phase3-comparison-summary').textContent = 'Comparison failed';
+                }
+            } catch (error) {
+                console.error('Error comparing phase 3 performance:', error);
+                showAlert('✗ Error comparing Phase 3 performance', 'error');
+                document.getElementById('phase3-comparison-summary').textContent = 'Comparison failed';
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Check backend connection
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/../health`);
+                if (response.ok) {
+                    updateConnectionStatus(true);
+                    return true;
+                }
+            } catch (error) {
+                console.log('Backend not available:', error.message);
+            }
+            updateConnectionStatus(false);
+            return false;
+        }
+
+        // Auto-load data on page load
+        window.addEventListener('load', async () => {
+            // First check if backend is available
+            const isConnected = await checkConnection();
+            
+            if (isConnected) {
+                // Try to load data initially (in case DB already has data)
+                loadAllData().catch((error) => {
+                    console.log('No data available yet. Click "Initialize Database" to create tables and load sample data.');
+                });
+            } else {
+                console.log('Backend not available. Please ensure the Flask server is running on port 5000.');
+            }
+        });
+
+        // Load sales analytics (number of sales per product by location)
+        async function loadSalesAnalytics() {
+            const btn = document.getElementById('load-sales-analytics-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Loading...</span>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/sales-per-product-location`);
+                const data = await response.json();
+
+                const tbody = document.getElementById('sales-analytics-tbody');
+                tbody.innerHTML = '';
+
+                // Update timing and count
+                document.getElementById('sales-analytics-timing').textContent = `Execution time: ${(data.execution_time * 1000).toFixed(2)} ms`;
+                document.getElementById('sales-analytics-count').textContent = `Records: ${data.count || 0}`;
+
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(item => {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">${item.PRODUCT_NAME || 'N/A'}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${item.LOCATION_NAME || 'N/A'}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${item.SALES_COUNT || 0}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${item.TOTAL_QUANTITY_SOLD || 0}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">$${parseFloat(item.TOTAL_REVENUE || 0).toFixed(2)}</td>
+                            </tr>
+                        `;
+                    });
+                    showAlert(`✓ Sales analytics loaded successfully (${(data.execution_time * 1000).toFixed(2)} ms)`, 'success');
+                } else {
+                    tbody.innerHTML = '<tr class="text-center text-gray-500"><td colspan="5" class="px-6 py-8"><i class="fas fa-chart-bar"></i> No data available</td></tr>';
+                    showAlert('No sales analytics data available', 'warning');
+                }
+            } catch (error) {
+                console.error('Error loading sales analytics:', error);
+                document.getElementById('sales-analytics-tbody').innerHTML = '<tr class="text-center text-red-500"><td colspan="5" class="px-6 py-8"><i class="fas fa-exclamation-triangle"></i> Error loading data</td></tr>';
+                showAlert('Error loading sales analytics', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Load max sales analytics (maximum sales quantity per product by location)
+        async function loadMaxSalesAnalytics() {
+            const btn = document.getElementById('load-max-sales-btn');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Loading...</span>';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/max-sales-per-product-location`);
+                const data = await response.json();
+
+                const tbody = document.getElementById('max-sales-tbody');
+                tbody.innerHTML = '';
+
+                // Update timing and count
+                document.getElementById('max-sales-timing').textContent = `Execution time: ${(data.execution_time * 1000).toFixed(2)} ms`;
+                document.getElementById('max-sales-count').textContent = `Records: ${data.count || 0}`;
+
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(item => {
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-6 py-4 text-sm font-medium text-gray-900">${item.PRODUCT_NAME || 'N/A'}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${item.LOCATION_NAME || 'N/A'}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700 font-bold text-green-600">${item.MAX_QUANTITY_SOLD || 0}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${parseFloat(item.AVG_QUANTITY_SOLD || 0).toFixed(1)}</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">${item.NUMBER_OF_SALES || 0}</td>
+                            </tr>
+                        `;
+                    });
+                    showAlert(`✓ Max sales analytics loaded successfully (${(data.execution_time * 1000).toFixed(2)} ms)`, 'success');
+                } else {
+                    tbody.innerHTML = '<tr class="text-center text-gray-500"><td colspan="5" class="px-6 py-8"><i class="fas fa-trophy"></i> No data available</td></tr>';
+                    showAlert('No max sales analytics data available', 'warning');
+                }
+            } catch (error) {
+                console.error('Error loading max sales analytics:', error);
+                document.getElementById('max-sales-tbody').innerHTML = '<tr class="text-center text-red-500"><td colspan="5" class="px-6 py-8"><i class="fas fa-exclamation-triangle"></i> Error loading data</td></tr>';
+                showAlert('Error loading max sales analytics', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Refresh data every 30 seconds
+        setInterval(async () => {
+            if (await checkConnection()) {
+                loadAllData().catch(() => {
+                    console.log('Failed to refresh data');
+                });
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
